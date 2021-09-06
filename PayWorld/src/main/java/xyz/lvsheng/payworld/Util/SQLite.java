@@ -41,10 +41,10 @@ public class SQLite {
         //⭐这里需要自定义数据类型和数据数量
         String worldSQL = "";
         for (World world : Bukkit.getWorlds()) {
-            worldSQL += ", " + world.getName() + " integer DEFAULT 0";
+            worldSQL += ", '" + world.getName() + "' integer DEFAULT 0";
         }
 
-        String sql = "create table if not exists  Player (UUID String " + worldSQL + "); ";
+        String sql = "create table if not exists Player (UUID String " + worldSQL + "); ";
         Statement stat = null;
 
         stat = con.createStatement();

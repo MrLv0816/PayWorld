@@ -10,7 +10,7 @@ Messages:
   timeOut: '&a[PayWorld] &e您在此世界时长已经耗尽,您已被传送回默认世界!'
   notConsole: '&a[PayWorld] &c此命令不能再控制台中执行!'
   configNoWorld: '&a[PayWorld] &c这个世界不存在与配置文件中!'
-  inputError: '&a[PayWorld] &c您的命令输入错误了\n&r- &a方法: &e/pw <Add/Set> <PlayerName> <WorldName> <Time>'
+  inputError: '&a[PayWorld] &c您的命令输入错误了\n&r- &a方法: &e/pw <Add/Set/Give> <PlayerName> <WorldName> <Time>'
   giveTime: '&a[PayWorld] &e您在 &b%world% &e的时长增加到了 &b%worldTime% &e分钟'
   offline: '&a[PayWorld] &c这个玩家不在线!'
   backpack: '&a[PayWorld] &c这个玩家的背包已满!'
