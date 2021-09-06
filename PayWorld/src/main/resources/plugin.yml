@@ -1,0 +1,12 @@
+name: PayWorld
+version: ${project.version}
+main: xyz.lvsheng.payworld.Main
+commands:
+  payworld:
+    aliases:
+      - pw
+permissions:
+  payworld.show:
+    default: not op
+  payworld.admin:
+    default: op
