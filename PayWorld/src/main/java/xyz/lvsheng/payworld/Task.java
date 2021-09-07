@@ -20,7 +20,7 @@ public class Task extends BukkitRunnable {
     public void run() {
         for (String world : PayWorld.plugins.getConfig().getStringList("World")) {
             for (Player player : Bukkit.getWorld(world).getPlayers()) {
-
+                //检测玩家时间
                 try {
                     int pTime = SQLite.select(PayWorld.sql, player.getUniqueId(), world);
                     SQLite.update(PayWorld.sql, player.getUniqueId(), world, --pTime);

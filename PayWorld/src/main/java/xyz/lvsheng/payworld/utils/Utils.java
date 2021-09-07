@@ -48,7 +48,8 @@ public class Utils {
         String itemName =
                 Objects.requireNonNull(PayWorld.plugins.getConfig().getString("Card.item")).toUpperCase(Locale.ROOT);
 
-        ItemStack itemStack = new ItemStack(Objects.requireNonNull(Material.getMaterial(itemName)));
+        ItemStack itemStack = new ItemStack
+                (Material.getMaterial(itemName) == null ? Material.PAPER : Material.getMaterial(itemName));
 
         //设置物品名
         ItemMeta itemMeta = itemStack.getItemMeta();
