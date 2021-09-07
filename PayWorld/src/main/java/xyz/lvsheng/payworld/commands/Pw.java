@@ -154,8 +154,7 @@ public class Pw implements CommandExecutor, TabCompleter {
 
     private void inputError(CommandSender sender) {
         sender.sendMessage(Utils.ColorMessage(PayWorld.plugins.getConfig().getString("Messages.inputError")
-                .replaceAll("\\\\n", "\n")
-));
+                .replaceAll("\\\\n", "\n")));
     }
 
     private void give(CommandSender sender, String playerName, String worldName, Integer time) {

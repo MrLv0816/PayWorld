@@ -43,6 +43,7 @@ public class Listener implements org.bukkit.event.Listener {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
+
     }
 
     //传送时检查时长

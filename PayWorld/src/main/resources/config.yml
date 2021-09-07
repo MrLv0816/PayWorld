@@ -6,7 +6,7 @@ World:
 #- 'world'
 
 
-#lore中必须使用 %world% 和 %worldTime% 并且只能存在一个,否则卡片无法正常使用
+#lore中必须使用 %world% 和 %worldTime% 并且每个只能存在一个,否则卡片无法正常使用
 Card:
   item: 'PAPER'
   name: '&6&l时长兑换卡'
