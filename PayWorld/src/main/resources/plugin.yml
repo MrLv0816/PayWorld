@@ -1,6 +1,6 @@
 name: PayWorld
 version: ${project.version}
-main: xyz.lvsheng.payworld.Main
+main: xyz.lvsheng.payworld.PayWorld
 commands:
   payworld:
     aliases:

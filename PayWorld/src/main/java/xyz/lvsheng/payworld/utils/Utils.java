@@ -1,4 +1,4 @@
-package xyz.lvsheng.payworld.Util;
+package xyz.lvsheng.payworld.utils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -6,9 +6,11 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import xyz.lvsheng.payworld.PayWorld;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -41,13 +43,23 @@ public class Utils {
     }
 
     public static ItemStack createCard(String worldName, int time) {
-        ItemStack itemStack = new ItemStack(Material.PAPER);
+
+        //取物品类型
+        String itemName =
+                Objects.requireNonNull(PayWorld.plugins.getConfig().getString("Card.item")).toUpperCase(Locale.ROOT);
+
+        ItemStack itemStack = new ItemStack(Objects.requireNonNull(Material.getMaterial(itemName)));
+
+        //设置物品名
         ItemMeta itemMeta = itemStack.getItemMeta();
-        itemMeta.setDisplayName("§e§l时长兑换卡");
-        List<String> meatList = new ArrayList<>();
-        meatList.add("§r- §a§l世界: " + worldName);
-        meatList.add("§r- §b§l时长: " + time + " 分钟");
-        itemMeta.setLore(meatList);
+        Objects.requireNonNull(itemMeta).setDisplayName(Utils.ColorMessage(PayWorld.plugins.getConfig().getString("Card.name")));
+
+        //设置lore
+        List<String> lore = new ArrayList<>();
+        for (String s : PayWorld.plugins.getConfig().getStringList("Card.lore")) {
+            lore.add(Utils.ColorMessage(s.replace("%world%", worldName).replace("%worldTime%", time + "")));
+        }
+        itemMeta.setLore(lore);
         itemStack.setItemMeta(itemMeta);
         return itemStack;
     }

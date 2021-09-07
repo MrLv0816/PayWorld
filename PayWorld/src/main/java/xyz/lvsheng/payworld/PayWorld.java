@@ -2,24 +2,24 @@ package xyz.lvsheng.payworld;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
-import xyz.lvsheng.payworld.Commands.pw;
-import xyz.lvsheng.payworld.Util.SQLite;
-import xyz.lvsheng.payworld.listEvent.Events;
+import xyz.lvsheng.payworld.commands.Pw;
+import xyz.lvsheng.payworld.utils.SQLite;
+import xyz.lvsheng.payworld.event.Listener;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
 
-public final class Main extends JavaPlugin {
+public final class PayWorld extends JavaPlugin {
     public static Connection sql;
-    public static Main plugins;
+    public static PayWorld plugins;
 
 
     @Override
     public void onEnable() {
         // Plugin startup logic
         this.init();
-        Bukkit.getConsoleSender().sendMessage("§a[PayWorld] §eload!");
+        Bukkit.getConsoleSender().sendMessage("§a[PayWorld] §ePlugin load successful!");
     }
 
     @Override
@@ -46,9 +46,9 @@ public final class Main extends JavaPlugin {
             // create table
             SQLite.createTable(sql);
             // register command
-            Objects.requireNonNull(getCommand("payworld")).setExecutor(new pw());
+            Objects.requireNonNull(getCommand("payworld")).setExecutor(new Pw());
             // register event
-            Bukkit.getPluginManager().registerEvents(new Events(), this);
+            Bukkit.getPluginManager().registerEvents(new Listener(), this);
             // timer start
             new Task().runTaskTimerAsynchronously(this, 20 * 60, 20 * 60);
         } catch (SQLException throwables) {

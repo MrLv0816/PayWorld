@@ -5,6 +5,15 @@ BackWorld: 'world'
 World:
 #- 'world'
 
+
+#lore中必须使用 %world% 和 %worldTime% 并且只能存在一个,否则卡片无法正常使用
+Card:
+  item: 'PAPER'
+  name: '&6&l时长兑换卡'
+  lore:
+    - '&7- &a&l世界: %world%'
+    - '&7- &b&l时长: %worldTime%'
+
 Messages:
   lackTime: '&a[PayWorld] &e对不起您剩余的时长不足,无法传送进入该世界!'
   timeOut: '&a[PayWorld] &e您在此世界时长已经耗尽,您已被传送回默认世界!'

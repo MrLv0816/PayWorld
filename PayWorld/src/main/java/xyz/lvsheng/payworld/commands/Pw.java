@@ -1,4 +1,4 @@
-package xyz.lvsheng.payworld.Commands;
+package xyz.lvsheng.payworld.commands;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -7,9 +7,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import xyz.lvsheng.payworld.Main;
-import xyz.lvsheng.payworld.Util.SQLite;
-import xyz.lvsheng.payworld.Util.Utils;
+import xyz.lvsheng.payworld.PayWorld;
+import xyz.lvsheng.payworld.utils.SQLite;
+import xyz.lvsheng.payworld.utils.Utils;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -19,10 +19,36 @@ import java.util.*;
  * @date 2021/9/4
  * @apiNote
  */
-public class pw implements CommandExecutor, TabCompleter {
+public class Pw implements CommandExecutor, TabCompleter {
 
 
+    public static void add(CommandSender sender, String playerName, String worldName, Integer time) {
+        try {
+            int pTime = SQLite.select(PayWorld.sql, Bukkit.getOfflinePlayer(playerName).getUniqueId(), worldName);
+            set(sender, playerName, worldName, (pTime < 0 ? time : pTime + time));
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
 
+    }
+
+    public static void set(CommandSender sender, String playerName, String worldName, Integer time) {
+
+        try {
+            UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
+            int pTime = SQLite.select(PayWorld.sql, uuid, worldName);
+            if (pTime < 0) {
+                SQLite.insert(PayWorld.sql, uuid, worldName, time);
+            } else {
+                SQLite.update(PayWorld.sql, uuid, worldName, time);
+            }
+            sender.sendMessage(Utils.ColorMessage(PayWorld.plugins.getConfig().getString("Messages.giveTime")).replace("%world%", worldName).replace("%worldTime%", time + ""));
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+
+
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -30,7 +56,9 @@ public class pw implements CommandExecutor, TabCompleter {
         if (sender.hasPermission("payworld.admin")) {
             this.com(sender, args.length != 0 ? args : null);
         } else {
-            this.com(sender, null);
+            if (sender.hasPermission("payworld.show")) {
+                this.com(sender, null);
+            }
         }
 
         return true;
@@ -57,7 +85,7 @@ public class pw implements CommandExecutor, TabCompleter {
                 }
 
                 if (args.length == 3 && !args[0].equalsIgnoreCase("show")) {
-                    return Main.plugins.getConfig().getStringList("World");
+                    return PayWorld.plugins.getConfig().getStringList("World");
                 }
 
                 if (args.length == 4 && !args[0].equalsIgnoreCase("show")) {
@@ -76,11 +104,12 @@ public class pw implements CommandExecutor, TabCompleter {
     }
 
     private void com(CommandSender sender, String... args) {
+
         if (args == null) {
             if (sender instanceof Player) {
                 this.show(sender);
             } else {
-                sender.sendMessage(Utils.ColorMessage(Main.plugins.getConfig().getString("Messages.notConsole")));
+                sender.sendMessage(Utils.ColorMessage(PayWorld.plugins.getConfig().getString("Messages.notConsole")));
             }
             return;
         }
@@ -91,10 +120,13 @@ public class pw implements CommandExecutor, TabCompleter {
         }
 
         if (args.length > 2) {
-            if (!Utils.equals(Main.plugins.getConfig().getStringList("World"), args[2])) {
-                sender.sendMessage(Utils.ColorMessage(Main.plugins.getConfig().getString("Messages.configNoWorld")));
+            //判断输入的世界是否存在于配置文件中
+            if (!Utils.equals(PayWorld.plugins.getConfig().getStringList("World"), args[2])) {
+                sender.sendMessage(Utils.ColorMessage(PayWorld.plugins.getConfig().getString("Messages.configNoWorld")));
                 return;
             }
+
+            //判断输入是否为数字
             int inputTime;
             try {
                 inputTime = Integer.parseInt(args[3]);
@@ -102,69 +134,47 @@ public class pw implements CommandExecutor, TabCompleter {
                 this.inputError(sender);
                 return;
             }
+
+
             if (args[0].equalsIgnoreCase("add")) {
                 add(sender, args[1], args[2], inputTime);
+                return;
             }
             if (args[0].equalsIgnoreCase("set")) {
                 set(sender, args[1], args[2], inputTime);
+                return;
             }
             if (args[0].equalsIgnoreCase("give")) {
                 this.give(sender, args[1], args[2], inputTime);
+                return;
             }
-
-            return;
         }
         this.inputError(sender);
     }
 
-    public static void add(CommandSender sender, String playerName, String worldName, Integer time) {
-        try {
-            int pTime = SQLite.select(Main.sql, Bukkit.getOfflinePlayer(playerName).getUniqueId(), worldName);
-            set(sender, playerName, worldName, (pTime < 0 ? 0 : pTime + time));
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-
-    }
-
-    public static void set(CommandSender sender, String playerName, String worldName, Integer time) {
-        try {
-            UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
-            int pTime = SQLite.select(Main.sql, uuid, worldName);
-            if (pTime < 0) {
-                SQLite.insert(Main.sql, uuid, worldName, time);
-            } else {
-                SQLite.update(Main.sql, uuid, worldName, time);
-            }
-            sender.sendMessage(Utils.ColorMessage(Main.plugins.getConfig().getString("Messages.giveTime")).replace("%world%", worldName).replace("%worldTime%", time + ""));
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-    }
-
     private void inputError(CommandSender sender) {
-        sender.sendMessage(Utils.ColorMessage(Main.plugins.getConfig().getString("Messages.inputError")));
+        sender.sendMessage(Utils.ColorMessage(PayWorld.plugins.getConfig().getString("Messages.inputError")
+                .replaceAll("\\\\n", "\n")
+));
     }
 
     private void give(CommandSender sender, String playerName, String worldName, Integer time) {
         ItemStack card = Utils.createCard(worldName, time);
         Player player = Bukkit.getPlayer(playerName);
         if (!Objects.equals(player, null)) {
-            if (player.getInventory().addItem(card).size() == 0) {
-                return;
+            if (!(player.getInventory().addItem(card).size() == 0)) {
+                sender.sendMessage(Utils.ColorMessage(PayWorld.plugins.getConfig().getString("Messages.backpack")));
             }
         } else {
-            sender.sendMessage(Utils.ColorMessage(Main.plugins.getConfig().getString("Messages.offline")));
-            return;
+            sender.sendMessage(Utils.ColorMessage(PayWorld.plugins.getConfig().getString("Messages.offline")));
         }
-        sender.sendMessage(Utils.ColorMessage(Main.plugins.getConfig().getString("Messages.backpack")));
     }
 
     private void show(CommandSender sender) {
         try {
-            HashMap<String, Integer> pTimeMap = SQLite.select(Main.sql, ((Player) sender).getUniqueId());
-            sender.sendMessage(Utils.ColorMessage(Main.plugins.getConfig().getString("Messages.worldTimeList")));
-            for (String world : Main.plugins.getConfig().getStringList("World")) {
+            HashMap<String, Integer> pTimeMap = SQLite.select(PayWorld.sql, ((Player) sender).getUniqueId());
+            sender.sendMessage(Utils.ColorMessage(PayWorld.plugins.getConfig().getString("Messages.worldTimeList")));
+            for (String world : PayWorld.plugins.getConfig().getStringList("World")) {
                 Integer worldTime = pTimeMap.get(world);
                 if (Objects.equals(worldTime, null)) {
                     worldTime = 0;
@@ -177,9 +187,8 @@ public class pw implements CommandExecutor, TabCompleter {
     }
 
     private void reload(CommandSender sender) {
-        Main.plugins.reloadConfig();
-        sender.sendMessage(Utils.ColorMessage(Main.plugins.getConfig().getString("Messages.reload")));
-
+        PayWorld.plugins.reloadConfig();
+        sender.sendMessage(Utils.ColorMessage(PayWorld.plugins.getConfig().getString("Messages.reload")));
     }
 
 }

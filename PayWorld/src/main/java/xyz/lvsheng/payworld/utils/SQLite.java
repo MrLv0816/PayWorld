@@ -1,4 +1,4 @@
-package xyz.lvsheng.payworld.Util;
+package xyz.lvsheng.payworld.utils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -37,8 +37,6 @@ public class SQLite {
     //创建表操作 CREATE TABLE
 
     public static void createTable(Connection con) throws SQLException {
-
-        //⭐这里需要自定义数据类型和数据数量
         String worldSQL = "";
         for (World world : Bukkit.getWorlds()) {
             worldSQL += ", '" + world.getName() + "' integer DEFAULT 0";
@@ -53,22 +51,6 @@ public class SQLite {
 
 
     }
-
-
-    //完全删除表操作 DROP TABLE
-
-    public static void dropTable(Connection con) throws SQLException {
-
-        String sql = "drop table Player ";
-
-        Statement stat = null;
-
-        stat = con.createStatement();
-
-        stat.executeUpdate(sql);
-
-    }
-
 
     //新增操作 INSERT
 
@@ -111,25 +93,7 @@ public class SQLite {
 
     }
 
-
-    //刪除操作 DELETE
-
-    public static void delete(Connection con, UUID uuid) throws SQLException {
-
-        String sql = "delete from Player where UUID = ?";
-
-        PreparedStatement pst = null;
-
-        pst = con.prepareStatement(sql);
-
-        pst.setString(1, uuid.toString());
-
-        pst.executeUpdate();
-
-    }
-
-
-    //查找操作 SELECT
+    //查找指定世界操作 SELECT
 
     public static int select(Connection con, UUID uu, String worldName) throws SQLException {
 
@@ -148,6 +112,8 @@ public class SQLite {
         }
         return -1;
     }
+
+    //查找全部世界操作
 
     public static HashMap<String, Integer> select(Connection con, UUID uu) throws SQLException {
 
