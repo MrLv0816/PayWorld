@@ -21,7 +21,13 @@ import java.util.*;
  */
 public class Pw implements CommandExecutor, TabCompleter {
 
-
+    /**
+     * 添加玩家的时长
+     * @param sender 命令执行人
+     * @param playerName 玩家名称
+     * @param worldName 世界名称
+     * @param time  时间
+     */
     public static void add(CommandSender sender, String playerName, String worldName, Integer time) {
         try {
             int pTime = SQLite.select(PayWorld.sql, Bukkit.getOfflinePlayer(playerName).getUniqueId(), worldName);
@@ -31,6 +37,13 @@ public class Pw implements CommandExecutor, TabCompleter {
         }
     }
 
+    /**
+     * 修改玩家的时长
+     * @param sender   命令执行人
+     * @param playerName    玩家名称
+     * @param worldName 世界名称
+     * @param time  时间
+     */
     public static void set(CommandSender sender, String playerName, String worldName, Integer time) {
 
         try {
