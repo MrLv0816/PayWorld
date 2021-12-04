@@ -1,0 +1,14 @@
+name: PayWorld
+version: ${project.version}
+main: xyz.lvsheng.payworld.PayWorld
+softdepend: ['Multiverse-Core','Multiworld','SimpleWorldsRel']
+api-version: 1.16
+commands:
+  payworld:
+    aliases:
+      - pw
+permissions:
+  payworld.show:
+    default: not op
+  payworld.admin:
+    default: op

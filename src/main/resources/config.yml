@@ -1,0 +1,33 @@
+#玩家时长耗尽传送回的世界
+BackWorld: 'world'
+
+#需要付费进入的世界
+World:
+#- 'world'
+
+
+#lore中必须使用 %world% 和 %worldTime% 并且每个只能存在一个,否则卡片无法正常使用
+Card:
+  item: 'PAPER'
+  name: '&6&l时长兑换卡'
+  lore:
+    - '&7- &a&l世界: %world%'
+    - '&7- &b&l时长: %worldTime%'
+
+
+
+Messages:
+  lackTime: '&a[PayWorld] &e对不起您剩余的时长不足,无法传送进入该世界!'
+  timeOut: '&a[PayWorld] &e您在此世界时长已经耗尽,您已被传送回默认世界!'
+  notConsole: '&a[PayWorld] &c此命令不能再控制台中执行!'
+  configNoWorld: '&a[PayWorld] &c这个世界不存在与配置文件中!'
+  inputError: '&a[PayWorld] &c您的命令输入错误了\n&r- &a方法: &e/pw <Add/Set/Give> <PlayerName> <WorldName> <Time>'
+  giveTime: '&a[PayWorld] &e您在 &b%world% &e的时长增加到了 &b%worldTime% &e分钟'
+  offline: '&a[PayWorld] &c这个玩家不在线!'
+  backpack: '&a[PayWorld] &c这个玩家的背包已满!'
+  worldTimeList: '&a[PayWorld] &e世界时长:'
+  NoWorld: '&a[PayWorld] &c配置文件中设置了不存在的世界,插件无法正常运行!!'
+  NoAPI: '&a[PayWorld] &c没有找到 PlaceholderAPI 已关闭此功能!'
+  reload: '&a[PayWorld]&e 配置文件重载完成!'
+
+
