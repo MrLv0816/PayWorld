@@ -1,14 +1,18 @@
 package xyz.lvsheng.payworld.commands;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import xyz.lvsheng.payworld.PayWorld;
-import xyz.lvsheng.payworld.utils.SQLite;
+import xyz.lvsheng.payworld.utils.SqlUtils;
 import xyz.lvsheng.payworld.utils.Utils;
 
 import java.sql.SQLException;
@@ -20,207 +24,197 @@ import java.util.*;
  * @apiNote
  */
 public class Pw implements CommandExecutor, TabCompleter {
-
-    /**
-     * 添加玩家的时长
-     * @param sender 命令执行人
-     * @param playerName 玩家名称
-     * @param worldName 世界名称
-     * @param time  时间
-     */
-    public static void add(CommandSender sender, String playerName, String worldName, Integer time) {
-        try {
-            int pTime = SQLite.select(PayWorld.sql, Bukkit.getOfflinePlayer(playerName).getUniqueId(), worldName);
-            set(sender, playerName, worldName, (pTime < 0 ? time : pTime + time));
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-    }
-
-    /**
-     * 修改玩家的时长
-     * @param sender   命令执行人
-     * @param playerName    玩家名称
-     * @param worldName 世界名称
-     * @param time  时间
-     */
-    public static void set(CommandSender sender, String playerName, String worldName, Integer time) {
-
-        try {
-            UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
-            int pTime = SQLite.select(PayWorld.sql, uuid, worldName);
-            if (pTime < 0) {
-                SQLite.insert(PayWorld.sql, uuid, worldName, time);
-            } else {
-                SQLite.update(PayWorld.sql, uuid, worldName, time);
-            }
-            sender.sendMessage(Utils.colorMessage(PayWorld.plugins.getConfig().getString("Messages.giveTime")).replace("%world%", worldName).replace("%worldTime%", time + ""));
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-
-
-    }
+    private CommandSender sender;
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        sender = commandSender;
 
-        if (sender.hasPermission("payworld.admin")) {
-            this.com(sender, args.length != 0 ? args : null);
-        } else {
-            if (sender.hasPermission("payworld.show")) {
-                this.com(sender, null);
+        //显示剩余时长
+        if (args.length == 0) {
+            if (sender instanceof Player) {
+                showTime();
+            } else {
+                sender.sendMessage(Utils.getMessage("notConsole"));
             }
+
+            return true;
         }
+
+        //重载配置文件
+        if (args.length == 1 && "reload".equals(args[0].toLowerCase())) {
+            reload();
+            return true;
+        }
+
+        //错误的参数显示帮助页面
+        if (args.length < 4) {
+            help();
+            return true;
+        }
+
+
+        if (!Utils.matchWorld(args[2])) {
+            sender.sendMessage(Utils.getMessage("configNoWorld"));
+            return true;
+        }
+
+        //时间输入错误
+        int time;
+        try {
+            time = Integer.parseInt(args[3]);
+        } catch (Exception e) {
+            sender.sendMessage(Utils.getMessage("inputError").replace("\\n", "\n"));
+            return true;
+        }
+
+        switch (args[0].toLowerCase()) {
+
+            case "add":
+                if (addTime(args[1], args[2], time, false)) {
+                    sender.sendMessage(Utils.getMessage("addTime")
+                            .replace("%world%", Utils.worldToAlias(args[2]))
+                            .replace("%worldTime%", time + ""));
+                }
+                break;
+            case "set":
+                if (addTime(args[1], args[2], time, true)) {
+                    sender.sendMessage(Utils.getMessage("setTime")
+                            .replace("%world%", Utils.worldToAlias(args[2]))
+                            .replace("%worldTime%", time + ""));
+                }
+                break;
+            case "give":
+                give(args[1], args[2], time);
+                break;
+            default:
+                help();
+                break;
+        }
+
 
         return true;
     }
 
+    @Nullable
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (sender instanceof Player) {
-            try{
-                if (Objects.requireNonNull(((Player) sender).getPlayer()).hasPermission("payworld.admin")) {
-                    List<String> list = new ArrayList<>();
-                    if (args.length == 1) {
-                        list.add("add");
-                        list.add("set");
-                        list.add("give");
-                        list.add("show");
-                        list.add("updataSQL");
-                        return list;
-                    }
-
-                    if (args.length == 2 && !args[0].equalsIgnoreCase("show")) {
-                        for (Player player : Bukkit.getOnlinePlayers()) {
-                            list.add(player.getName());
-                        }
-                        return list;
-                    }
-
-                    if (args.length == 3 && !args[0].equalsIgnoreCase("show")) {
-                        return PayWorld.plugins.getConfig().getStringList("World");
-                    }
-
-                    if (args.length == 4 && !args[0].equalsIgnoreCase("show")) {
-                        list.add("0");
-                        list.add("60");
-                        list.add("120");
-                        list.add("240");
-                        list.add("480");
-                        list.add("960");
-                        return list;
-                    }
-
+    public List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        List<String> list = new ArrayList<>();
+        switch (args.length) {
+            case 1:
+                list.add("add");
+                list.add("set");
+                list.add("give");
+                break;
+            case 2:
+                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                    list.add(onlinePlayer.getName());
                 }
-            }catch (Exception exception){
-                //
-            }
+                break;
+            case 3:
+                list = PayWorld.plugins.getConfig().getStringList("World");
+                break;
+            case 4:
+                list.add("60");
+                list.add("120");
+                list.add("240");
+                break;
         }
-        return null;
+        return list;
     }
 
-    private void com(CommandSender sender, String... args) {
+    public void showTime() {
 
-
-        if (args == null) {
-            if (sender instanceof Player) {
-                this.show(sender);
-            } else {
-                sender.sendMessage(Utils.colorMessage(PayWorld.plugins.getConfig().getString("Messages.notConsole")));
-            }
-            return;
-        }
-
-        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
-            this.reload(sender);
-            return;
-        }
-
-        //检测世界变动,增加列
+        Player player = (Player) sender;
         try {
-            SQLite.carateWorldColumn(PayWorld.sql);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-
-        if (args.length > 2) {
-            //判断输入的世界是否存在于配置文件中
-            if (!Utils.equals(PayWorld.plugins.getConfig().getStringList("World"), args[2])) {
-                sender.sendMessage(Utils.colorMessage(PayWorld.plugins.getConfig().getString("Messages.configNoWorld")));
+            Map<String, Integer> timeMap = SqlUtils.getAll(player.getUniqueId());
+            if (timeMap == null) {
                 return;
             }
 
-            //判断输入是否为数字
-            int inputTime;
-            try {
-                inputTime = Integer.parseInt(args[3]);
-            } catch (Exception e) {
-                this.inputError(sender);
-                return;
+            sender.sendMessage(Utils.getMessage("listTitle"));
+            String listText = Utils.getMessage("list");
+            for (String key : timeMap.keySet()) {
+                sender.sendMessage(listText
+                        .replace("%world%", Utils.worldToAlias(key))
+                        .replace("%worldTime%", timeMap.get(key) + ""));
             }
 
 
-            if (args[0].equalsIgnoreCase("add")) {
-                add(sender, args[1], args[2], inputTime);
-                return;
-            }
-            if (args[0].equalsIgnoreCase("set")) {
-                set(sender, args[1], args[2], inputTime);
-                return;
-            }
-            if (args[0].equalsIgnoreCase("give")) {
-                this.give(sender, args[1], args[2], inputTime);
-                return;
-            }
-        }
-        this.inputError(sender);
-    }
-
-    private void inputError(CommandSender sender) {
-        sender.sendMessage(Utils.colorMessage(PayWorld.plugins.getConfig().getString("Messages.inputError")
-                .replaceAll("\\\\n", "\n")));
-    }
-
-    private void give(CommandSender sender, String playerName, String worldName, Integer time) {
-        ItemStack card = Utils.createCard(worldName, time);
-        Player player = Bukkit.getPlayer(playerName);
-        if (!Objects.equals(player, null)) {
-            if (!(player.getInventory().addItem(card).size() == 0)) {
-                sender.sendMessage(Utils.colorMessage(PayWorld.plugins.getConfig().getString("Messages.backpack")));
-            }
-        } else {
-            sender.sendMessage(Utils.colorMessage(PayWorld.plugins.getConfig().getString("Messages.offline")));
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
-    private void show(CommandSender sender) {
+    public boolean addTime(String playerName, String world, int time, boolean set) {
+
         try {
-            HashMap<String, Integer> pTimeMap = SQLite.select(PayWorld.sql, ((Player) sender).getUniqueId());
-            sender.sendMessage(Utils.colorMessage(PayWorld.plugins.getConfig().getString("Messages.worldTimeList")));
-            for (String world : PayWorld.plugins.getConfig().getStringList("World")) {
-                    try{
-                        String worldName = Objects.requireNonNull(Bukkit.getWorld(world)).getName();
-                        Integer worldTime = pTimeMap.get(worldName);
-                        if (Objects.equals(worldTime, null)) {
-                            worldTime = 0;
-                        }
-                        sender.sendMessage("- §6" + world + ": §b" + worldTime);
-                    }catch (NullPointerException e){
-                        Bukkit.getConsoleSender().sendMessage(Utils.colorMessage(PayWorld.plugins.getConfig().getString("Messages.NoWorld")));
-                        sender.sendMessage(Utils.colorMessage(PayWorld.plugins.getConfig().getString("Messages.NoWorld")));
-                    }
 
+            OfflinePlayer player = Bukkit.getOfflinePlayer(playerName);
 
+            //验证数据库字段
+            SqlUtils.updateSqlField(world);
+            //添加时长
+            int i = SqlUtils.updateTime(player.getUniqueId(), world, time, set);
+            if (i > 0) {
+                //增加成功 提示消息
+                return true;
             }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+
         }
+        return false;
     }
 
-    private void reload(CommandSender sender) {
+    public void give(String playerName, String world, int time) {
+
+        try {
+
+            //查找玩家
+            Player player = Bukkit.getServer().getPlayerExact(playerName);
+            if (player == null) {
+                //玩家不存在
+                sender.sendMessage(Utils.getMessage("offline"));
+                return;
+            }
+
+            //创建时长卡
+            ItemStack itemStack = Utils.createCard(world, time);
+            HashMap<Integer, ItemStack> inv = player.getInventory().addItem(itemStack);
+            if (inv.size() != 0) {
+                //玩家背包已满
+                sender.sendMessage(Utils.getMessage("backpack"));
+                return;
+            }
+            sender.sendMessage(Utils.getMessage("giveCrad")
+                    .replace("%world%", Utils.worldToAlias(world))
+                    .replace("%worldTime%", time + ""));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void help() {
+        sender.sendMessage("- §a[PayWorld] §e帮助-------------------#");
+        sender.sendMessage("- §b/payworld");
+        sender.sendMessage("- §e显示所有世界的剩余时长");
+        sender.sendMessage("- §b/payworld <Add/Set/Give> <PlayerName> <WorldName> <Time>");
+        sender.sendMessage("- §e对玩家进行 添加/修改/卡片 操作");
+        sender.sendMessage("- §e#------------------------------------#");
+        sender.sendMessage("- §a命令简写模式: /pw");
+
+    }
+
+    public void reload() {
         PayWorld.plugins.reloadConfig();
-        sender.sendMessage(Utils.colorMessage(PayWorld.plugins.getConfig().getString("Messages.reload")));
+        sender.sendMessage(Utils.getMessage("reload"));
     }
+
 
 }
+
+

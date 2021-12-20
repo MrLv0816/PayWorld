@@ -1,20 +1,18 @@
 package xyz.lvsheng.payworld;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
 import xyz.lvsheng.payworld.commands.Pw;
 import xyz.lvsheng.payworld.event.Listener;
 import xyz.lvsheng.payworld.event.Papi;
-import xyz.lvsheng.payworld.utils.SQLite;
+import xyz.lvsheng.payworld.utils.JdbcUtils;
+import xyz.lvsheng.payworld.utils.SqlUtils;
 import xyz.lvsheng.payworld.utils.Utils;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
 
 public final class PayWorld extends JavaPlugin {
-    public static Connection sql;
     public static PayWorld plugins;
 
 
@@ -27,11 +25,10 @@ public final class PayWorld extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
         try {
-            sql.close();
-        } catch (SQLException throwables) {
-            //都卸载了,异常就异常吧...
+            JdbcUtils.getConnection().close();
+        } catch (SQLException e) {
+            //
         }
     }
 
@@ -45,9 +42,7 @@ public final class PayWorld extends JavaPlugin {
             // create config
             saveDefaultConfig();
             //get sql
-            sql = SQLite.getConnection();
-            // create table
-            SQLite.createTable(sql);
+            SqlUtils.initSql();
             // register command
             Objects.requireNonNull(getCommand("payworld")).setExecutor(new Pw());
             // register event
@@ -64,7 +59,7 @@ public final class PayWorld extends JavaPlugin {
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new Papi().register();
         } else {
-            Bukkit.getConsoleSender().sendMessage(Utils.colorMessage(plugins.getConfig().getString("Messages.NoAPI")));
+            Bukkit.getConsoleSender().sendMessage(Utils.getMessage("NoAPI"));
         }
     }
 

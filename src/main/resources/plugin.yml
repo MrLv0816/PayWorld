@@ -2,7 +2,7 @@ name: PayWorld
 version: ${project.version}
 main: xyz.lvsheng.payworld.PayWorld
 softdepend: ['Multiverse-Core','Multiworld','SimpleWorldsRel']
-api-version: 1.16
+api-version: 1.13
 commands:
   payworld:
     aliases:

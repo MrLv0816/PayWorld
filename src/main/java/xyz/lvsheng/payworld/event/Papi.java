@@ -1,11 +1,10 @@
 package xyz.lvsheng.payworld.event;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.World;
-import xyz.lvsheng.payworld.PayWorld;
-import xyz.lvsheng.payworld.utils.SQLite;
+
+import xyz.lvsheng.payworld.utils.SqlUtils;
+
 
 import java.sql.SQLException;
 
@@ -23,23 +22,25 @@ public class Papi extends PlaceholderExpansion {
 
     @Override
     public String getVersion() {
-        return "1.1";
+        return "1.0";
     }
 
     @Override
     public String onRequest(OfflinePlayer player, String params) {
-        for (World world : Bukkit.getWorlds()) {
-            if (params.equalsIgnoreCase(world.getName())) {
+        try {
 
-                try {
-                    SQLite.carateWorldColumn(PayWorld.sql);
-                    return String.valueOf(Math.max(SQLite.select(PayWorld.sql, player.getUniqueId(), world.getName()), 0));
-                } catch (SQLException throwables) {
-                    throwables.printStackTrace();
-                }
+            //验证数据库字段中是否存在这个世界
+            SqlUtils.updateSqlField(params);
+            //时间
+            return String.valueOf(Math.max(0,SqlUtils.getTime(player.getUniqueId(),params)));
 
-            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return "0";
     }
+
+
+
 }
